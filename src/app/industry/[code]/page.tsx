@@ -47,6 +47,32 @@ async function getIndustryData(code: string): Promise<IndustryData[]> {
   return res.json();
 }
 
+interface Rankings {
+  [date: string]: {
+    [sectorCode: string]: {
+      fiveDayRank: number | null;
+      twentyDayRank: number | null;
+    };
+  };
+}
+
+async function getRankings(): Promise<Rankings> {
+  try {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/rankings`, {
+      cache: 'no-store',
+    });
+    
+    if (!res.ok) {
+      return {};
+    }
+    
+    return res.json();
+  } catch (error) {
+    console.error('Failed to fetch rankings:', error);
+    return {};
+  }
+}
+
 export async function generateMetadata({ params }: { params: Promise<{ code: string }> }): Promise<Metadata> {
   const { code } = await params;
   const name = await getSectorName(code);
@@ -61,6 +87,7 @@ export default async function IndustryPage({ params }: { params: Promise<{ code:
   const { code } = await params;
   const name = await getSectorName(code);
   const data = await getIndustryData(code);
+  const rankings = await getRankings();
 
   if (data.length === 0) {
     notFound();
@@ -117,11 +144,18 @@ export default async function IndustryPage({ params }: { params: Promise<{ code:
     const twentyDayClose = index < data.length - 20 ? data[index + 20].close_price : null;
     const twentyDayChange = calculateChange(row.close_price, twentyDayClose);
 
+    // 获取排名数据
+    const dateRankings = rankings[row.trade_date]?.[row.sector_code];
+    const fiveDayRank = dateRankings?.fiveDayRank ?? null;
+    const twentyDayRank = dateRankings?.twentyDayRank ?? null;
+
     return {
       ...row,
       dailyChange,
       fiveDayChange,
       twentyDayChange,
+      fiveDayRank,
+      twentyDayRank,
     };
   });
 
@@ -158,7 +192,9 @@ export default async function IndustryPage({ params }: { params: Promise<{ code:
                   <th className="px-4 py-3 text-right text-sm font-semibold text-foreground">成交额</th>
                   <th className="px-4 py-3 text-right text-sm font-semibold text-foreground">涨跌幅</th>
                   <th className="px-4 py-3 text-right text-sm font-semibold text-foreground">五日涨跌</th>
+                  <th className="px-4 py-3 text-right text-sm font-semibold text-foreground">五日排名</th>
                   <th className="px-4 py-3 text-right text-sm font-semibold text-foreground">二十日涨跌</th>
+                  <th className="px-4 py-3 text-right text-sm font-semibold text-foreground">二十日排名</th>
                 </tr>
               </thead>
               <tbody>
@@ -196,8 +232,14 @@ export default async function IndustryPage({ params }: { params: Promise<{ code:
                     <td className={`px-4 py-3 text-sm text-right tabular-nums font-medium ${getChangeColorClass(row.fiveDayChange)}`}>
                       {formatChange(row.fiveDayChange)}
                     </td>
+                    <td className="px-4 py-3 text-sm text-muted-foreground text-right tabular-nums">
+                      {row.fiveDayRank !== null ? `${row.fiveDayRank}/90` : '-'}
+                    </td>
                     <td className={`px-4 py-3 text-sm text-right tabular-nums font-medium ${getChangeColorClass(row.twentyDayChange)}`}>
                       {formatChange(row.twentyDayChange)}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-muted-foreground text-right tabular-nums">
+                      {row.twentyDayRank !== null ? `${row.twentyDayRank}/90` : '-'}
                     </td>
                   </tr>
                 ))}
