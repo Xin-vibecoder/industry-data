@@ -47,26 +47,29 @@ async function getIndustryData(code: string): Promise<IndustryData[]> {
   return res.json();
 }
 
-interface AllIndustryData {
-  sector_code: string;
-  trade_date: string;
-  close_price: number;
+interface Rankings {
+  [date: string]: {
+    [sectorCode: string]: {
+      fiveDayRank: number | null;
+      twentyDayRank: number | null;
+    };
+  };
 }
 
-async function getAllIndustriesData(): Promise<AllIndustryData[]> {
+async function getRankings(): Promise<Rankings> {
   try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/all-industries-data`, {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/rankings`, {
       cache: 'no-store',
     });
     
     if (!res.ok) {
-      return [];
+      return {};
     }
     
     return res.json();
   } catch (error) {
-    console.error('Failed to fetch all industries data:', error);
-    return [];
+    console.error('Failed to fetch rankings:', error);
+    return {};
   }
 }
 
@@ -84,7 +87,7 @@ export default async function IndustryPage({ params }: { params: Promise<{ code:
   const { code } = await params;
   const name = await getSectorName(code);
   const data = await getIndustryData(code);
-  const allIndustriesData = await getAllIndustriesData();
+  const rankings = await getRankings();
 
   if (data.length === 0) {
     notFound();
@@ -126,117 +129,6 @@ export default async function IndustryPage({ params }: { params: Promise<{ code:
     if (change < 0) return 'text-green-600 dark:text-green-400';
     return 'text-muted-foreground';
   };
-
-  // 计算所有行业的涨跌幅和排名（基于前端数据，避免重复计算）
-  const calculateRankings = () => {
-    // 按行业代码分组
-    const dataBySector: { [code: string]: AllIndustryData[] } = {};
-    allIndustriesData.forEach((row) => {
-      if (!dataBySector[row.sector_code]) {
-        dataBySector[row.sector_code] = [];
-      }
-      dataBySector[row.sector_code].push(row);
-    });
-
-    // 按日期分组
-    const dataByDate: { [date: string]: AllIndustryData[] } = {};
-    allIndustriesData.forEach((row) => {
-      if (!dataByDate[row.trade_date]) {
-        dataByDate[row.trade_date] = [];
-      }
-      dataByDate[row.trade_date].push(row);
-    });
-
-    // 获取所有日期（倒序）
-    const allDates = Object.keys(dataByDate).sort().reverse();
-
-    // 为每个行业计算涨跌幅
-    const sectorChanges: { [code: string]: { [date: string]: { fiveDay: number | null; twentyDay: number | null } } } = {};
-    
-    Object.keys(dataBySector).forEach(code => {
-      const sectorData = dataBySector[code];
-      sectorChanges[code] = {};
-
-      sectorData.forEach((row, index) => {
-        // 五日涨跌
-        const fiveDayClose = index < sectorData.length - 5 ? sectorData[index + 5].close_price : null;
-        const fiveDayChange = calculateChange(row.close_price, fiveDayClose);
-
-        // 二十日涨跌
-        const twentyDayClose = index < sectorData.length - 20 ? sectorData[index + 20].close_price : null;
-        const twentyDayChange = calculateChange(row.close_price, twentyDayClose);
-
-        sectorChanges[code][row.trade_date] = {
-          fiveDay: fiveDayChange,
-          twentyDay: twentyDayChange
-        };
-      });
-    });
-
-    // 计算每个日期的排名
-    const rankings: { [date: string]: { [sectorCode: string]: { fiveDayRank: number | null; twentyDayRank: number | null } } } = {};
-
-    allDates.forEach(date => {
-      rankings[date] = {};
-
-      // 获取该日期所有行业的涨跌幅
-      const fiveDayChanges: { code: string; change: number | null }[] = [];
-      const twentyDayChanges: { code: string; change: number | null }[] = [];
-
-      dataByDate[date].forEach((row) => {
-        const changes = sectorChanges[row.sector_code]?.[date];
-        if (changes) {
-          fiveDayChanges.push({ code: row.sector_code, change: changes.fiveDay });
-          twentyDayChanges.push({ code: row.sector_code, change: changes.twentyDay });
-        }
-      });
-
-      // 排序并计算排名（涨幅越大，排名越小）
-      const sortedFiveDay = fiveDayChanges
-        .filter(item => item.change !== null)
-        .sort((a, b) => (b.change as number) - (a.change as number));
-      
-      const sortedTwentyDay = twentyDayChanges
-        .filter(item => item.change !== null)
-        .sort((a, b) => (b.change as number) - (a.change as number));
-
-      // 创建排名映射
-      fiveDayChanges.forEach(item => {
-        if (item.change !== null) {
-          const rank = sortedFiveDay.findIndex(s => s.code === item.code) + 1;
-          rankings[date][item.code] = {
-            ...rankings[date][item.code],
-            fiveDayRank: rank > 0 ? rank : null
-          };
-        } else {
-          rankings[date][item.code] = {
-            ...rankings[date][item.code],
-            fiveDayRank: null
-          };
-        }
-      });
-
-      twentyDayChanges.forEach(item => {
-        if (item.change !== null) {
-          const rank = sortedTwentyDay.findIndex(s => s.code === item.code) + 1;
-          rankings[date][item.code] = {
-            ...rankings[date][item.code],
-            twentyDayRank: rank > 0 ? rank : null
-          };
-        } else {
-          rankings[date][item.code] = {
-            ...rankings[date][item.code],
-            twentyDayRank: rankings[date][item.code]?.twentyDayRank || null
-          };
-        }
-      });
-    });
-
-    return rankings;
-  };
-
-  // 计算排名
-  const rankings = calculateRankings();
 
   // 计算每行的涨跌幅数据
   const dataWithChanges = data.map((row, index) => {
