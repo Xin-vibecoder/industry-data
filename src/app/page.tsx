@@ -1,35 +1,58 @@
 import type { Metadata } from 'next';
-import Image from 'next/image';
+import Link from 'next/link';
 
 export const metadata: Metadata = {
-  title: '扣子编程 - AI 开发伙伴',
-  description: '扣子编程，你的 AI 开发伙伴已就位',
+  title: '同花顺行业数据',
+  description: '查看90个行业的历史数据',
 };
 
-export default function Home() {
+interface Sector {
+  id: number;
+  name: string;
+  code: string;
+  created_at: string;
+}
+
+async function getSectors(): Promise<Sector[]> {
+  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/sectors`, {
+    cache: 'no-store',
+  });
+  
+  if (!res.ok) {
+    return [];
+  }
+  
+  return res.json();
+}
+
+export default async function Home() {
+  const sectors = await getSectors();
+
   return (
-    <div className="flex h-full items-center justify-center bg-background text-foreground transition-colors duration-300 dark:bg-background dark:text-foreground overflow-hidden min-h-screen">
-      {/* 主容器 */}
-      <main className="flex w-full h-full max-w-3xl flex-col items-center justify-center px-16 py-32 sm:items-center">
-        <div className="flex flex-col items-center justify-between gap-4">
-           <Image
-            src="https://lf-coze-web-cdn.coze.cn/obj/eden-cn/lm-lgvj/ljhwZthlaukjlkulzlp/coze-coding/icon/coze-coding.gif"
-            alt="扣子编程 Logo"
-            width={156}
-            height={130}
-          />
-          <div>
-            <div className="flex flex-col items-center gap-2 text-center sm:items-center sm:text-center">
-              <h1 className="max-w-xl text-base font-semibold leading-tight tracking-tight text-foreground dark:text-foreground">
-                应用开发中
-              </h1>
-              <p className="max-w-2xl text-sm leading-8 text-muted-foreground dark:text-muted-foreground">
-                请稍后，页面即将呈现
-              </p>
-            </div>
-          </div>
+    <div className="min-h-screen bg-background p-8">
+      <div className="max-w-7xl mx-auto">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-foreground">同花顺行业数据</h1>
+          <p className="text-muted-foreground mt-2">共 {sectors.length} 个行业</p>
         </div>
-      </main>
+
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+          {sectors.map((sector) => (
+            <Link
+              key={sector.id}
+              href={`/industry/${sector.code}`}
+              className="group p-4 rounded-lg border border-border bg-card hover:bg-accent hover:border-accent-foreground transition-all duration-200"
+            >
+              <div className="text-sm font-medium text-foreground group-hover:text-accent-foreground">
+                {sector.name}
+              </div>
+              <div className="text-xs text-muted-foreground mt-1">
+                {sector.code}
+              </div>
+            </Link>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

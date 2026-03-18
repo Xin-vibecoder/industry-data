@@ -20,7 +20,7 @@ export const industrySectors = pgTable("industry_sectors", {
 }));
 
 export const industryDailyData = pgTable("industry_daily_data", {
-	id: bigint("id", { mode: "number" }).serial().notNull(),
+	id: bigint("id", { mode: "number" }).notNull(),
 	sectorCode: varchar("sector_code", { length: 20 }).notNull(),
 	tradeDate: varchar("trade_date", { length: 10 }).notNull(),
 	openPrice: doublePrecision("open_price").notNull(),
