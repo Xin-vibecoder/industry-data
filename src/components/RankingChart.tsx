@@ -107,16 +107,6 @@ export default function RankingChart({ data }: RankingChartProps) {
           </LineChart>
         </ResponsiveContainer>
       </div>
-      <div className="flex justify-center gap-6 mt-2 text-sm text-muted-foreground">
-        <div className="flex items-center gap-2">
-          <div className="w-4 h-0.5 bg-red-500"></div>
-          <span>五日排名</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-4 h-0.5 bg-blue-500"></div>
-          <span>二十日排名</span>
-        </div>
-      </div>
     </div>
   );
 }
