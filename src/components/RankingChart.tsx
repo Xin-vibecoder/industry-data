@@ -9,6 +9,7 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
+  ReferenceLine,
 } from 'recharts';
 
 interface RankingData {
@@ -50,6 +51,18 @@ export default function RankingChart({ data }: RankingChartProps) {
             }}
           >
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+            <ReferenceLine 
+              y={45} 
+              stroke="#f59e0b" 
+              strokeDasharray="5 5" 
+              strokeWidth={2}
+              label={{ 
+                value: '中位线', 
+                position: 'right',
+                fill: '#f59e0b',
+                fontSize: 12
+              }}
+            />
             <XAxis 
               dataKey="trade_date" 
               tickFormatter={formatXAxis}
