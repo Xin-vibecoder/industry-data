@@ -13,6 +13,12 @@ interface IndustryData {
   volume: number;
   amount: number;
   created_at: string;
+  // 计算字段（从数据库读取）
+  daily_change: number | null;
+  five_day_change: number | null;
+  twenty_day_change: number | null;
+  five_day_rank: number | null;
+  twenty_day_rank: number | null;
 }
 
 interface Sector {
@@ -47,32 +53,6 @@ async function getIndustryData(code: string): Promise<IndustryData[]> {
   return res.json();
 }
 
-interface Rankings {
-  [date: string]: {
-    [sectorCode: string]: {
-      fiveDayRank: number | null;
-      twentyDayRank: number | null;
-    };
-  };
-}
-
-async function getRankings(): Promise<Rankings> {
-  try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/rankings`, {
-      cache: 'no-store',
-    });
-    
-    if (!res.ok) {
-      return {};
-    }
-    
-    return res.json();
-  } catch (error) {
-    console.error('Failed to fetch rankings:', error);
-    return {};
-  }
-}
-
 export async function generateMetadata({ params }: { params: Promise<{ code: string }> }): Promise<Metadata> {
   const { code } = await params;
   const name = await getSectorName(code);
@@ -87,7 +67,6 @@ export default async function IndustryPage({ params }: { params: Promise<{ code:
   const { code } = await params;
   const name = await getSectorName(code);
   const data = await getIndustryData(code);
-  const rankings = await getRankings();
 
   if (data.length === 0) {
     notFound();
@@ -109,12 +88,6 @@ export default async function IndustryPage({ params }: { params: Promise<{ code:
     return num.toLocaleString('zh-CN');
   };
 
-  // 计算涨跌幅
-  const calculateChange = (currentClose: number, previousClose: number | null): number | null => {
-    if (previousClose === null || previousClose === 0) return null;
-    return ((currentClose - previousClose) / previousClose) * 100;
-  };
-
   // 格式化涨跌幅
   const formatChange = (change: number | null): string => {
     if (change === null) return '-';
@@ -129,35 +102,6 @@ export default async function IndustryPage({ params }: { params: Promise<{ code:
     if (change < 0) return 'text-green-600 dark:text-green-400';
     return 'text-muted-foreground';
   };
-
-  // 计算每行的涨跌幅数据
-  const dataWithChanges = data.map((row, index) => {
-    // 数据是倒序的，前一日是下一行
-    const prevClose = index < data.length - 1 ? data[index + 1].close_price : null;
-    const dailyChange = calculateChange(row.close_price, prevClose);
-
-    // 五日涨跌：当前行 + 5
-    const fiveDayClose = index < data.length - 5 ? data[index + 5].close_price : null;
-    const fiveDayChange = calculateChange(row.close_price, fiveDayClose);
-
-    // 二十日涨跌：当前行 + 20
-    const twentyDayClose = index < data.length - 20 ? data[index + 20].close_price : null;
-    const twentyDayChange = calculateChange(row.close_price, twentyDayClose);
-
-    // 获取排名数据
-    const dateRankings = rankings[row.trade_date]?.[row.sector_code];
-    const fiveDayRank = dateRankings?.fiveDayRank ?? null;
-    const twentyDayRank = dateRankings?.twentyDayRank ?? null;
-
-    return {
-      ...row,
-      dailyChange,
-      fiveDayChange,
-      twentyDayChange,
-      fiveDayRank,
-      twentyDayRank,
-    };
-  });
 
   return (
     <div className="min-h-screen bg-background p-8">
@@ -198,7 +142,7 @@ export default async function IndustryPage({ params }: { params: Promise<{ code:
                 </tr>
               </thead>
               <tbody>
-                {dataWithChanges.map((row, index) => (
+                {data.map((row, index) => (
                   <tr
                     key={row.id}
                     className={`border-b border-border hover:bg-muted/30 transition-colors ${
@@ -226,20 +170,20 @@ export default async function IndustryPage({ params }: { params: Promise<{ code:
                     <td className="px-4 py-3 text-sm text-muted-foreground text-right tabular-nums">
                       {formatVolume(row.amount)}
                     </td>
-                    <td className={`px-4 py-3 text-sm text-right tabular-nums font-medium ${getChangeColorClass(row.dailyChange)}`}>
-                      {formatChange(row.dailyChange)}
+                    <td className={`px-4 py-3 text-sm text-right tabular-nums font-medium ${getChangeColorClass(row.daily_change)}`}>
+                      {formatChange(row.daily_change)}
                     </td>
-                    <td className={`px-4 py-3 text-sm text-right tabular-nums font-medium ${getChangeColorClass(row.fiveDayChange)}`}>
-                      {formatChange(row.fiveDayChange)}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-muted-foreground text-right tabular-nums">
-                      {row.fiveDayRank !== null ? `${row.fiveDayRank}/90` : '-'}
-                    </td>
-                    <td className={`px-4 py-3 text-sm text-right tabular-nums font-medium ${getChangeColorClass(row.twentyDayChange)}`}>
-                      {formatChange(row.twentyDayChange)}
+                    <td className={`px-4 py-3 text-sm text-right tabular-nums font-medium ${getChangeColorClass(row.five_day_change)}`}>
+                      {formatChange(row.five_day_change)}
                     </td>
                     <td className="px-4 py-3 text-sm text-muted-foreground text-right tabular-nums">
-                      {row.twentyDayRank !== null ? `${row.twentyDayRank}/90` : '-'}
+                      {row.five_day_rank !== null ? `${row.five_day_rank}/90` : '-'}
+                    </td>
+                    <td className={`px-4 py-3 text-sm text-right tabular-nums font-medium ${getChangeColorClass(row.twenty_day_change)}`}>
+                      {formatChange(row.twenty_day_change)}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-muted-foreground text-right tabular-nums">
+                      {row.twenty_day_rank !== null ? `${row.twenty_day_rank}/90` : '-'}
                     </td>
                   </tr>
                 ))}

@@ -49,8 +49,31 @@ def calculate_and_store_rankings(client, incremental_days: int = 0):
     
     # 1. 获取所有行业数据
     print("\n步骤1: 获取行业数据...")
-    response = client.table('industry_daily_data').select('*').order('trade_date', desc=True).execute()
-    all_data = response.data
+    
+    # 直接设置一个大limit，Supabase默认最大1000，需要分页
+    all_data = []
+    start = 0
+    page_size = 1000  # Supabase默认最大值
+    
+    while True:
+        response = client.table('industry_daily_data')\
+            .select('*', count='exact')\
+            .order('trade_date', desc=True)\
+            .limit(page_size)\
+            .offset(start)\
+            .execute()
+        
+        if not response.data:
+            break
+        
+        all_data.extend(response.data)
+        total_count = response.count if hasattr(response, 'count') else len(all_data)
+        print(f"  已获取: {len(all_data)} / {total_count} 条")
+        
+        if len(response.data) < page_size or len(all_data) >= total_count:
+            break
+        
+        start += page_size
     
     if not all_data:
         print("✗ 没有数据")
