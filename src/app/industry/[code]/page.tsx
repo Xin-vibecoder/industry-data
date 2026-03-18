@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import IndustryDataDisplay from '@/components/IndustryDataDisplay';
 
 interface IndustryData {
   id: number;
@@ -13,7 +14,6 @@ interface IndustryData {
   volume: number;
   amount: number;
   created_at: string;
-  // 计算字段（从数据库读取）
   daily_change: number | null;
   five_day_change: number | null;
   twenty_day_change: number | null;
@@ -53,148 +53,50 @@ async function getIndustryData(code: string): Promise<IndustryData[]> {
   return res.json();
 }
 
-export async function generateMetadata({ params }: { params: Promise<{ code: string }> }): Promise<Metadata> {
+interface PageProps {
+  params: Promise<{
+    code: string;
+  }>;
+}
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { code } = await params;
   const name = await getSectorName(code);
-  
   return {
     title: `${name} - 行业数据`,
-    description: `查看${name}行业的历史数据`,
   };
 }
 
-export default async function IndustryPage({ params }: { params: Promise<{ code: string }> }) {
+export default async function IndustryPage({ params }: PageProps) {
   const { code } = await params;
-  const name = await getSectorName(code);
   const data = await getIndustryData(code);
-
+  const name = await getSectorName(code);
+  
   if (data.length === 0) {
     notFound();
   }
 
-  const formatNumber = (num: number, decimals: number = 2): string => {
-    return num.toLocaleString('zh-CN', {
-      minimumFractionDigits: decimals,
-      maximumFractionDigits: decimals,
-    });
-  };
-
-  const formatVolume = (num: number): string => {
-    if (num >= 100000000) {
-      return `${(num / 100000000).toFixed(2)}亿`;
-    } else if (num >= 10000) {
-      return `${(num / 10000).toFixed(2)}万`;
-    }
-    return num.toLocaleString('zh-CN');
-  };
-
-  // 格式化涨跌幅
-  const formatChange = (change: number | null): string => {
-    if (change === null) return '-';
-    const sign = change > 0 ? '+' : '';
-    return `${sign}${change.toFixed(2)}%`;
-  };
-
-  // 获取涨跌幅颜色类
-  const getChangeColorClass = (change: number | null): string => {
-    if (change === null) return 'text-muted-foreground';
-    if (change > 0) return 'text-red-600 dark:text-red-400';
-    if (change < 0) return 'text-green-600 dark:text-green-400';
-    return 'text-muted-foreground';
-  };
-
   return (
-    <div className="min-h-screen bg-background p-8">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen bg-background">
+      <div className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
+        {/* 面包屑导航 */}
         <div className="mb-6">
-          <Link
-            href="/"
+          <Link 
+            href="/" 
             className="text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
-            ← 返回行业列表
+            ← 返回首页
           </Link>
         </div>
 
+        {/* 页面标题 */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground">{name}</h1>
-          <p className="text-muted-foreground mt-2">
-            行业代码: {code} | 共 {data.length} 条历史数据
-          </p>
+          <h1 className="text-3xl font-bold text-foreground mb-2">{name}</h1>
+          <p className="text-muted-foreground">行业代码: {code}</p>
         </div>
 
-        <div className="rounded-lg border border-border bg-card overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-border bg-muted/50">
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-foreground">日期</th>
-                  <th className="px-4 py-3 text-right text-sm font-semibold text-foreground">开盘价</th>
-                  <th className="px-4 py-3 text-right text-sm font-semibold text-foreground">最高价</th>
-                  <th className="px-4 py-3 text-right text-sm font-semibold text-foreground">最低价</th>
-                  <th className="px-4 py-3 text-right text-sm font-semibold text-foreground">收盘价</th>
-                  <th className="px-4 py-3 text-right text-sm font-semibold text-foreground">成交量</th>
-                  <th className="px-4 py-3 text-right text-sm font-semibold text-foreground">成交额</th>
-                  <th className="px-4 py-3 text-right text-sm font-semibold text-foreground">涨跌幅</th>
-                  <th className="px-4 py-3 text-right text-sm font-semibold text-foreground">五日涨跌</th>
-                  <th className="px-4 py-3 text-right text-sm font-semibold text-foreground">五日排名</th>
-                  <th className="px-4 py-3 text-right text-sm font-semibold text-foreground">二十日涨跌</th>
-                  <th className="px-4 py-3 text-right text-sm font-semibold text-foreground">二十日排名</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.map((row, index) => (
-                  <tr
-                    key={row.id}
-                    className={`border-b border-border hover:bg-muted/30 transition-colors ${
-                      index % 2 === 0 ? 'bg-background' : 'bg-muted/20'
-                    }`}
-                  >
-                    <td className="px-4 py-3 text-sm text-foreground font-medium">
-                      {row.trade_date}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-foreground text-right tabular-nums">
-                      {formatNumber(row.open_price)}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-red-600 dark:text-red-400 text-right tabular-nums font-medium">
-                      {formatNumber(row.high_price)}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-green-600 dark:text-green-400 text-right tabular-nums font-medium">
-                      {formatNumber(row.low_price)}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-foreground text-right tabular-nums font-medium">
-                      {formatNumber(row.close_price)}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-muted-foreground text-right tabular-nums">
-                      {formatVolume(row.volume)}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-muted-foreground text-right tabular-nums">
-                      {formatVolume(row.amount)}
-                    </td>
-                    <td className={`px-4 py-3 text-sm text-right tabular-nums font-medium ${getChangeColorClass(row.daily_change)}`}>
-                      {formatChange(row.daily_change)}
-                    </td>
-                    <td className={`px-4 py-3 text-sm text-right tabular-nums font-medium ${getChangeColorClass(row.five_day_change)}`}>
-                      {formatChange(row.five_day_change)}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-muted-foreground text-right tabular-nums">
-                      {row.five_day_rank !== null ? `${row.five_day_rank}/90` : '-'}
-                    </td>
-                    <td className={`px-4 py-3 text-sm text-right tabular-nums font-medium ${getChangeColorClass(row.twenty_day_change)}`}>
-                      {formatChange(row.twenty_day_change)}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-muted-foreground text-right tabular-nums">
-                      {row.twenty_day_rank !== null ? `${row.twenty_day_rank}/90` : '-'}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <div className="mt-4 text-xs text-muted-foreground">
-          数据从2024年1月1日至今，按时间倒序排列
-        </div>
+        {/* 使用客户端组件展示数据和图表 */}
+        <IndustryDataDisplay data={data} name={name} code={code} />
       </div>
     </div>
   );
