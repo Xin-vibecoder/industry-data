@@ -1,0 +1,50 @@
+name: Update Industry Data
+
+on:
+  # 每天北京时间 20:00 (UTC 12:00) 自动执行
+  schedule:
+    - cron: '0 12 * * *'
+  
+  # 支持手动触发
+  workflow_dispatch:
+    inputs:
+      days:
+        description: '更新最近几天的数据'
+        required: false
+        default: '2'
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install akshare pandas numpy supabase
+      
+      - name: Run update script
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          DAYS=${{ github.event.inputs.days || '2' }}
+          echo "Updating last $DAYS days of data..."
+          python3 server/auto_update_data.py $DAYS
+      
+      - name: Upload log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: update-log
+          path: /app/work/logs/bypass/auto_update.log
+          retention-days: 7
