@@ -2,7 +2,9 @@
 # -*- coding: utf-8 -*-
 """
 自动更新同花顺行业数据
-每天晚上7点执行，失败则8点重试
+支持命令行参数指定更新天数，默认2天
+用法: python3 auto_update_data.py [days]
+示例: python3 auto_update_data.py 2  # 更新最近2天
 """
 import sys
 import os
@@ -24,6 +26,14 @@ from src.storage.database.supabase_client import get_supabase_client
 
 # 日志文件路径
 LOG_FILE = "/app/work/logs/bypass/auto_update.log"
+
+# 从命令行参数获取更新天数，默认2天
+UPDATE_DAYS = 2
+if len(sys.argv) > 1:
+    try:
+        UPDATE_DAYS = int(sys.argv[1])
+    except ValueError:
+        pass
 
 
 def log(message):
@@ -185,7 +195,7 @@ def main():
     主函数
     """
     log("\n" + "=" * 60)
-    log("自动更新任务启动")
+    log(f"自动更新任务启动 - 更新最近 {UPDATE_DAYS} 天数据")
     log("=" * 60)
     
     try:
@@ -193,13 +203,13 @@ def main():
         client = get_supabase_client()
         log("✓ Supabase客户端初始化成功")
         
-        # 获取最近3天的行业数据
-        success, total_records = fetch_recent_industry_data(client, days=3)
+        # 获取最近N天的行业数据
+        success, total_records = fetch_recent_industry_data(client, days=UPDATE_DAYS)
         
         if success and total_records > 0:
             # 数据获取成功，执行增量更新
             log("\n数据获取成功，开始增量更新排名...")
-            update_success = incremental_update_rankings(client, days=5)
+            update_success = incremental_update_rankings(client, days=UPDATE_DAYS + 2)
             
             if update_success:
                 log("\n" + "=" * 60)
