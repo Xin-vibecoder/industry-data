@@ -1,10 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-
-const supabaseUrl = process.env.COZE_SUPABASE_URL!;
-const supabaseKey = process.env.COZE_SUPABASE_ANON_KEY!;
-
-const supabase = createClient(supabaseUrl, supabaseKey);
+import { getSupabaseClient } from '@/lib/supabase';
 
 interface RankingRow {
   id: number;
@@ -28,6 +23,8 @@ interface RankingData {
 
 export async function GET() {
   try {
+    const supabase = await getSupabaseClient();
+    
     // 从数据库读取排名数据
     const { data, error } = await supabase
       .from('industry_rankings')
