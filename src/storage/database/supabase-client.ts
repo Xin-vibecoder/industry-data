@@ -11,14 +11,14 @@ export function getSupabaseClient(): SupabaseClient {
     return supabaseInstance;
   }
 
-  const url = process.env.COZE_SUPABASE_URL;
-  const anonKey = process.env.COZE_SUPABASE_ANON_KEY;
+  const url = process.env.SUPABASE_URL;
+  const anonKey = process.env.SUPABASE_ANON_KEY;
 
   if (!url) {
-    throw new Error('COZE_SUPABASE_URL is not set. Please configure it in the platform environment variables.');
+    throw new Error('SUPABASE_URL is not set. Please configure it in the platform environment variables.');
   }
   if (!anonKey) {
-    throw new Error('COZE_SUPABASE_ANON_KEY is not set. Please configure it in the platform environment variables.');
+    throw new Error('SUPABASE_ANON_KEY is not set. Please configure it in the platform environment variables.');
   }
 
   supabaseInstance = createClient(url, anonKey, {
