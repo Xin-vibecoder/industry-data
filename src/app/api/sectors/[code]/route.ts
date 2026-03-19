@@ -17,6 +17,7 @@ export async function GET(
       .order('trade_date', { ascending: false });
 
     if (dailyError) {
+      console.error('Supabase daily data query error:', dailyError);
       return NextResponse.json({ error: dailyError.message }, { status: 500 });
     }
 
@@ -28,6 +29,7 @@ export async function GET(
       .order('trade_date', { ascending: false });
 
     if (rankingsError) {
+      console.error('Supabase rankings query error:', rankingsError);
       return NextResponse.json({ error: rankingsError.message }, { status: 500 });
     }
 
@@ -52,9 +54,8 @@ export async function GET(
 
     return NextResponse.json(mergedData);
   } catch (error) {
-    return NextResponse.json(
-      { error: 'Failed to fetch industry data' },
-      { status: 500 }
-    );
+    console.error('API error:', error);
+    const message = error instanceof Error ? error.message : 'Failed to fetch industry data';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

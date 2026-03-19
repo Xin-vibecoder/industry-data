@@ -32,6 +32,7 @@ export async function GET() {
       .order('trade_date', { ascending: false });
 
     if (error) {
+      console.error('Supabase query error:', error);
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
@@ -55,10 +56,8 @@ export async function GET() {
 
     return NextResponse.json(rankings);
   } catch (error) {
-    console.error('Error fetching rankings:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch rankings' },
-      { status: 500 }
-    );
+    console.error('API error:', error);
+    const message = error instanceof Error ? error.message : 'Failed to fetch rankings';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

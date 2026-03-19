@@ -11,14 +11,14 @@ export async function GET() {
       .order('name', { ascending: true });
 
     if (error) {
+      console.error('Supabase query error:', error);
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
     return NextResponse.json(data);
   } catch (error) {
-    return NextResponse.json(
-      { error: 'Failed to fetch sectors' },
-      { status: 500 }
-    );
+    console.error('API error:', error);
+    const message = error instanceof Error ? error.message : 'Failed to fetch sectors';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
