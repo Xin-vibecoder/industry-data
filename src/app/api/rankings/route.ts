@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getSupabaseClient } from '@/lib/supabase';
+import { getSupabaseClient } from '@/storage/database/supabase-client';
 
 interface RankingRow {
   id: number;
@@ -23,7 +23,7 @@ interface RankingData {
 
 export async function GET() {
   try {
-    const supabase = await getSupabaseClient();
+    const supabase = getSupabaseClient();
     
     // 从数据库读取排名数据
     const { data, error } = await supabase

@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
-import { getSupabaseClient } from '@/lib/supabase';
+import { getSupabaseClient } from '@/storage/database/supabase-client';
 
 export async function GET() {
   try {
-    const supabase = await getSupabaseClient();
+    const supabase = getSupabaseClient();
     
     const { data, error } = await supabase
       .from('industry_sectors')

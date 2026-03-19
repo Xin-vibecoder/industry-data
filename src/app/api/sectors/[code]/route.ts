@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server';
-import { getSupabaseClient } from '@/lib/supabase';
+import { getSupabaseClient } from '@/storage/database/supabase-client';
 
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ code: string }> }
 ) {
   try {
-    const supabase = await getSupabaseClient();
+    const supabase = getSupabaseClient();
     const { code } = await params;
 
     // 获取行业每日数据
