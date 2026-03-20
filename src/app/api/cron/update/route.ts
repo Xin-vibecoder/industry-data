@@ -30,7 +30,7 @@ function validateAuth(request: Request): boolean {
 
 /**
  * 增量更新 API
- * GET /api/cron/update?token=xxx
+ * GET /api/cron/update?token=xxx&days=2
  * 或
  * GET /api/cron/update (Header: Authorization: Bearer xxx)
  */
@@ -50,10 +50,15 @@ export async function GET(request: Request) {
       );
     }
 
-    console.log('[Cron API] Starting incremental update...');
+    // 获取更新天数参数
+    const url = new URL(request.url);
+    const daysParam = url.searchParams.get('days');
+    const days = daysParam ? parseInt(daysParam) : 2;
+    
+    console.log(`[Cron API] Starting incremental update for last ${days} days...`);
     
     // 执行增量更新
-    const result = await runIncrementalUpdate();
+    const result = await runIncrementalUpdate(days);
     
     return NextResponse.json({
       success: result.success,
