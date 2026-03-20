@@ -49,7 +49,7 @@ def main():
     
     try:
         client = get_supabase_client()
-        result = client.table('industry_data').select('date', count='exact').eq('date', today_beijing).execute()
+        result = client.table('industry_daily_data').select('date', count='exact').eq('date', today_beijing).execute()
         
         if result.count > 0:
             print(f"✓ 今天 ({today_beijing}) 已有 {result.count} 条数据，跳过更新")
