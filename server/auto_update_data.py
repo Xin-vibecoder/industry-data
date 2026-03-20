@@ -15,14 +15,14 @@ import json
 
 # 添加项目路径到sys.path
 project_root = Path(__file__).parent.parent
-sys.path.insert(0, str(project_root / "server"))
+sys.path.insert(0, str(project_root))
 
 import akshare as ak
 import pandas as pd
 import numpy as np
 
 # 导入Supabase客户端
-from src.storage.database.supabase_client import get_supabase_client
+from server.src.storage.database.supabase_client import get_supabase_client
 
 # 日志文件路径 - 根据环境选择不同路径
 if os.environ.get("GITHUB_WORKFLOW"):
