@@ -1,9 +1,10 @@
 name: Update Industry Data
 
 on:
-  # 每天北京时间 20:00 (UTC 12:00) 自动执行
+  # 每天北京时间 20:00 (UTC 12:00) 主更新
   schedule:
-    - cron: '0 12 * * *'
+    - cron: '0 12 * * *'   # 20:00 北京时间 - 主更新
+    - cron: '0 13-23 * * *' # 21:00-次日07:00 北京时间 - 每小时重试
   
   # 支持手动触发
   workflow_dispatch:
@@ -12,10 +13,16 @@ on:
         description: '更新最近几天的数据'
         required: false
         default: '2'
+      force:
+        description: '强制更新（忽略已有数据检查）'
+        required: false
+        default: 'false'
 
 jobs:
   update:
     runs-on: ubuntu-latest
+    outputs:
+      success: ${{ steps.update.outputs.success }}
     
     steps:
       - name: Checkout repository
@@ -31,14 +38,49 @@ jobs:
           python -m pip install --upgrade pip
           pip install akshare pandas numpy supabase
       
-      - name: Run update script
+      - name: Check and update data
+        id: update
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: |
           DAYS=${{ github.event.inputs.days || '2' }}
+          FORCE=${{ github.event.inputs.force || 'false' }}
+          
+          # 判断是否是重试运行（非主更新时段）
+          CURRENT_HOUR=$(date -u +%H)
+          if [ "$CURRENT_HOUR" != "12" ] && [ "$FORCE" != "true" ]; then
+            echo "重试运行: 检查今天是否已有数据..."
+            python3 -c "
+import os
+import sys
+sys.path.insert(0, '.')
+from datetime import datetime, timezone, timedelta
+from server.src.storage.database.supabase_client import get_supabase_client
+
+client = get_supabase_client()
+beijing_tz = timezone(timedelta(hours=8))
+today_beijing = datetime.now(beijing_tz).strftime('%Y-%m-%d')
+
+# 检查今天是否有数据
+result = client.table('industry_data').select('date', count='exact').eq('date', today_beijing).execute()
+if result.count > 0:
+    print(f'✓ 今天 ({today_beijing}) 已有 {result.count} 条数据，跳过更新')
+    with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+        f.write('success=true\n')
+    sys.exit(0)
+else:
+    print(f'✗ 今天 ({today_beijing}) 暂无数据，开始更新...')
+"
+          fi
+          
           echo "Updating last $DAYS days of data..."
-          python3 server/auto_update_data.py $DAYS
+          if python3 server/auto_update_data.py $DAYS; then
+            echo "success=true" >> $GITHUB_OUTPUT
+          else
+            echo "success=false" >> $GITHUB_OUTPUT
+            exit 1
+          fi
       
       - name: Upload log
         if: always()
