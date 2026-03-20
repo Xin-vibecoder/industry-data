@@ -24,8 +24,12 @@ import numpy as np
 # 导入Supabase客户端
 from src.storage.database.supabase_client import get_supabase_client
 
-# 日志文件路径
-LOG_FILE = "/app/work/logs/bypass/auto_update.log"
+# 日志文件路径 - 根据环境选择不同路径
+if os.environ.get("GITHUB_WORKFLOW"):
+    # GitHub Actions 环境 - 写入当前目录
+    LOG_FILE = os.path.join(os.getcwd(), "auto_update.log")
+else:
+    LOG_FILE = "/app/work/logs/bypass/auto_update.log"
 
 # 从命令行参数获取更新天数，默认2天
 UPDATE_DAYS = 2
