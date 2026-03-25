@@ -2,8 +2,7 @@
 
 ## 一、下载项目文件
 
-- **完整项目（含数据库）**: [industry-data-full.tar.gz](/industry-data-full.tar.gz) (~9MB)
-- **仅项目代码**: [industry-data-project.tar.gz](/industry-data-project.tar.gz) (~226KB)
+- **完整项目（含数据库）**: [industry-data-full.tar.gz](/industry-data-full.tar.gz) (~14MB)
 - **数据库导出**: [db_export.tar.gz](/db_export.tar.gz) (~4.3MB)
 
 ## 二、在扣子编程中创建新项目
@@ -15,18 +14,13 @@
 
 ## 三、上传项目文件
 
-### 方法一：逐个文件上传（推荐）
-
-1. 解压下载的 `industry-data-project.tar.gz` 文件
+1. 解压下载的 `industry-data-full.tar.gz` 文件
 2. 在扣子编程的文件管理器中，按照原有目录结构上传文件：
    - 覆盖根目录下的 `package.json`、`next.config.ts` 等配置文件
    - 上传 `src/` 目录下的所有源码文件
    - 上传 `server/` 目录下的 Python 脚本
    - 上传 `.github/` 目录下的 GitHub Actions 配置
-
-### 方法二：压缩包上传（如果支持）
-
-如果扣子编程支持压缩包上传，直接上传解压即可。
+   - 上传 `public/` 目录下的数据库导出文件
 
 ## 四、创建 Supabase 项目
 
