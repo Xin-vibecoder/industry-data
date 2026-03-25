@@ -2,7 +2,9 @@
 
 ## 一、下载项目文件
 
-点击下载: [industry-data-project.tar.gz](/industry-data-project.tar.gz)
+- **完整项目（含数据库）**: [industry-data-full.tar.gz](/industry-data-full.tar.gz) (~9MB)
+- **仅项目代码**: [industry-data-project.tar.gz](/industry-data-project.tar.gz) (~226KB)
+- **数据库导出**: [db_export.tar.gz](/db_export.tar.gz) (~4.3MB)
 
 ## 二、在扣子编程中创建新项目
 
@@ -102,9 +104,24 @@ CREATE INDEX idx_rankings_date ON industry_rankings(trade_date);
 
 2. 点击「运行」按钮启动项目
 
-## 七、初始化数据
+## 七、导入数据（推荐）
 
-首次部署需要初始化历史数据：
+如果你使用导出的数据库文件，可以直接导入：
+
+1. 解压 `db_export.tar.gz` 到 `public/` 目录
+2. 在终端中执行：
+   ```bash
+   python3 public/import_data.py
+   ```
+
+这将导入：
+- 90 个行业板块
+- 48,240 条每日数据（从 2024年1月 至今）
+- 48,240 条排名数据
+
+## 八、初始化数据（备选）
+
+如果需要从零开始获取数据：
 
 1. 在终端中执行：
    ```bash
@@ -118,7 +135,7 @@ CREATE INDEX idx_rankings_date ON industry_rankings(trade_date);
    python3 server/calculate_rankings.py
    ```
 
-## 八、配置自动更新（可选）
+## 九、配置自动更新（可选）
 
 如果要使用 GitHub Actions 自动更新：
 
