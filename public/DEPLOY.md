@@ -28,7 +28,30 @@
 
 如果扣子编程支持压缩包上传，直接上传解压即可。
 
-## 四、配置环境变量
+## 四、创建 Supabase 项目
+
+### 4.1 注册 Supabase
+
+1. 访问 [Supabase 官网](https://supabase.com)
+2. 点击「Start your project」注册账号
+3. 创建新组织（Organization）
+
+### 4.2 创建项目
+
+1. 点击「New Project」
+2. 填写项目名称（如：industry-data）
+3. 设置数据库密码（请妥善保管）
+4. 选择区域（建议选择离你最近的区域）
+5. 点击「Create new project」等待项目创建完成
+
+### 4.3 获取 API 密钥
+
+1. 进入项目后，点击左侧「Settings」→「API」
+2. 复制以下信息：
+   - **Project URL**: 项目地址
+   - **anon public**: 匿名公钥（公开密钥，可前端使用）
+
+## 五、配置环境变量
 
 在扣子编程的「环境变量」设置中添加：
 
@@ -44,9 +67,11 @@ SUPABASE_ANON_KEY=你的Supabase匿名密钥
 3. 进入 Settings > API
 4. 复制 `URL` 和 `anon public` 密钥
 
-## 五、创建数据库表
+## 六、创建数据库表
 
 在 Supabase 的 SQL Editor 中执行以下 SQL：
+
+> **位置**：左侧菜单 → SQL Editor → New query
 
 ```sql
 -- 行业板块表
@@ -93,18 +118,35 @@ CREATE TABLE industry_rankings (
 CREATE INDEX idx_daily_data_date ON industry_daily_data(trade_date);
 CREATE INDEX idx_daily_data_sector ON industry_daily_data(sector_code);
 CREATE INDEX idx_rankings_date ON industry_rankings(trade_date);
+
+-- 配置 RLS（行级安全策略）- 允许匿名读取
+ALTER TABLE industry_sectors ENABLE ROW LEVEL SECURITY;
+ALTER TABLE industry_daily_data ENABLE ROW LEVEL SECURITY;
+ALTER TABLE industry_rankings ENABLE ROW LEVEL SECURITY;
+
+-- 允许匿名用户读取所有表
+CREATE POLICY "Allow anonymous read access" ON industry_sectors FOR SELECT USING (true);
+CREATE POLICY "Allow anonymous read access" ON industry_daily_data FOR SELECT USING (true);
+CREATE POLICY "Allow anonymous read access" ON industry_rankings FOR SELECT USING (true);
 ```
 
-## 六、安装依赖并运行
+点击「Run」执行 SQL。
+
+## 七、安装依赖并运行
 
 1. 在扣子编程的终端中执行：
    ```bash
    pnpm install
    ```
 
-2. 点击「运行」按钮启动项目
+2. 安装 Python 依赖（用于数据导入）：
+   ```bash
+   pip install supabase httpx
+   ```
 
-## 七、导入数据（推荐）
+3. 点击「运行」按钮启动项目
+
+## 八、导入数据（推荐）
 
 如果你使用导出的数据库文件，可以直接导入：
 
@@ -119,7 +161,7 @@ CREATE INDEX idx_rankings_date ON industry_rankings(trade_date);
 - 48,240 条每日数据（从 2024年1月 至今）
 - 48,240 条排名数据
 
-## 八、初始化数据（备选）
+## 九、初始化数据（备选）
 
 如果需要从零开始获取数据：
 
@@ -135,7 +177,7 @@ CREATE INDEX idx_rankings_date ON industry_rankings(trade_date);
    python3 server/calculate_rankings.py
    ```
 
-## 九、配置自动更新（可选）
+## 十、配置自动更新（可选）
 
 如果要使用 GitHub Actions 自动更新：
 
